@@ -1,0 +1,163 @@
+
+
+function create_product_post_type() {
+    register_post_type( 'product',
+        array(
+            'labels' => array(
+               'name' => __( 'Products' ),
+                'singular_name' => __( 'Product' )
+             ),
+            'public' => true,
+            'has_archive' => true,
+            'supports' => array('title', 'editor', 'thumbnail', 'custom-fields')
+        )
+    );
+}
+add_action( 'init', 'create_product_post_type' );
+
+
+<?php
+
+get_header();
+
+// Check if there are any products
+if ( have_posts() ) {
+    echo '<div class="products-container">';
+    // Start the loop
+    while ( have_posts() ) {
+        the_post();
+        $sku = get_post_meta( get_the_ID(), 'sku', true );
+        $rating = get_post_meta( get_the_ID(), 'rating', true );
+        $document = get_post_meta( get_the_ID(), 'document', true );
+        $price = get_post_meta( get_the_ID(), 'price', true );
+        $video = get_post_meta( get_the_ID(), 'video', true );
+        $terms = wp_get_post_terms( get_the_ID(), 'product_category');
+        ?>
+        <div class="product-card">
+            <div class="product-image">
+                <?php the_post_thumbnail( 'medium' ); ?>
+            </div>
+            <div class="product-details">
+                <h2 class="product-title"><?php the_title(); ?></h2>
+                <div class="product-sku">SKU: <?php echo $sku; ?></div>
+                <div class="product-rating">Rating: <?php echo $rating; ?></div>
+                <a href="<?php echo $document; ?>" class="product-document" download>Download Product Document</a>
+                <div class="product-price">Price: <?php echo $price; ?></div>
+                <div class="product-video">
+                    <iframe src="<?php echo $video; ?>" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <div class="product-terms">
+                    <?php 
+                        if (!empty($terms)) {
+                            echo '<div class="product-category">Category: ';
+                            foreach($terms as $term) {
+                                echo $term->name;
+                            }
+                            echo '</div>';
+                        }
+                    ?>
+                </div>
+                <div class="product-content">
+                    <?php the_content(); ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    echo '</div>';
+    // Previous/next page navigation.
+    the_posts_pagination( array(
+        'prev_text'          => __( 'Previous page', 'your-theme' ),
+        'next_text'          => __( 'Next page', 'your-theme' ),
+        'before_page_number' => '<span class="meta-nav screen-reader-text">' . __( 'Page', 'your-theme' ) . ' </span>',
+    ) );
+}
+
+
+
+    function add_product_meta_boxes() {
+    add_meta_box(
+        'product_meta_box', // ID
+        'Product Details', // Title
+        'display_product_meta_box', // Callback
+        'product', // Screen
+        'normal', // Context
+        'high' // Priority
+    );
+}
+add_action( 'add_meta_boxes', 'add_product_meta_boxes' );
+
+#Creating a meta box form display_product_meta_box() callback function where you will add all fields.
+#display_product_meta_box() callback function, and add all the required fields:
+
+function display_product_meta_box($post) {
+    // Nonce field to validate form request came from current site
+    wp_nonce_field( basename( __FILE__ ), 'product_meta_box_nonce' );
+    // Get the existing values for fields
+    $sku = get_post_meta( $post->ID, 'sku', true );
+    $rating = get_post_meta( $post->ID, 'rating', true );
+    $document = get_post_meta( $post->ID, 'document', true );
+    $price = get_post_meta( $post->ID, 'price', true );
+    $video = get_post_meta( $post->ID, 'video', true );
+    // markup for form
+    echo '<table class="form-table">';
+    echo '<tr>';
+    echo '<th><label for="product_sku" class="product_sku_label">' . __( 'SKU', 'text_domain' ) . '</label></th>';
+    echo '<td>';
+    echo '<input type="text" id="product_sku" name="product_sku" class="product_sku_field" value="' . esc_attr( $sku ) . '" size="25" />';
+    echo '</td>';
+    echo '</tr>';
+    echo '<tr>';
+    echo '<th><label for="product_rating" class="product_rating_label">' . __( 'Rating', 'text_domain' ) . '</label></th>';
+    echo '<td>';
+    echo '<input type="number" id="product_rating" name="product_rating" class="product_rating_field" value="' . esc_attr( $rating ) . '" size="25" min="1" max="5" step="1" />';
+    echo '</td>';
+    echo '</tr>';
+    echo '<tr>';
+    echo '<th><label for="product_document" class="product_document_label">' . __( 'Document', 'text_domain' ) . '</label></th>';
+    echo '<td>';
+    echo '<input type="file" id="product_document" name="product_document" accept=".pdf" class="product_document_field" value="' . esc_attr( $document ) . '" size="25" />';
+    echo '</td>';
+    echo '</tr>';
+    echo '<tr>';
+    echo '<th><label for="product_price" class="product_price_label">' . __( 'Price', 'text_domain' ) . '</label></th>';
+    echo '<td>';
+    echo '<input type="text" id="product_price" name="product_price" class="product_price_field" value="' . esc_attr( $price ) . '" size="25" />';
+    echo '</td>';
+    echo '</tr>';
+    echo '<tr>';
+    echo
+
+
+# adding a custom taxonomies use the register_taxonomy function. creting "Category" and "Seller"
+taxonomy for the Product post type:
+
+    function create_product_taxonomies() {
+    $taxonomies = array(
+        array(
+            'slug' => 'product_category',
+            'singular' => 'Category',
+            'plural' => 'Categories',
+            'post_type' => 'product'
+        ),
+        array(
+            'slug' => 'product_seller',
+            'singular' => 'Seller',
+            'plural' => 'Sellers',
+            'post_type' => 'product'
+        )
+    );
+    foreach($taxonomies as $taxonomy) {
+        $args = array(
+            'labels' => array(
+                'name' => __( $taxonomy['plural'] ),
+                'singular_name' => __( $taxonomy['singular'] )
+            ),
+            'hierarchical' => true,
+            'public' => true,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_in_nav_menus' => true,
+            'query_var' =>
+
+            
